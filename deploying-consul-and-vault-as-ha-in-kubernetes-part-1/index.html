@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <title>Deploying Consul and Vault as HA in Kubernetes (Part 2)</title>
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" type="text/css" href="../assets/built/screen.css">
+
+    <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon">
+    <link rel="canonical" href="http://localhost:8080/deploying-consul-and-vault-as-ha-in-kubernetes-part-1/">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <link rel="amphtml" href="http://localhost:8080/deploying-consul-and-vault-as-ha-in-kubernetes-part-1/amp/">
+    
+    <meta property="og:site_name" content="linuxcloud.ng">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="Deploying Consul and Vault as HA in Kubernetes (Part 2)">
+    <meta property="og:description" content="Vault  what is vault?  Vault is an Harshicorp tool that is used for secrets management. By secrets management we mean it secures, stores, and tightly controls access to tokens, passwords, certificates, API keys, and any secrets of your choice. you can read more on  https://learn.hashicorp.com/vault  From">
+    <meta property="og:url" content="http://localhost:8080/deploying-consul-and-vault-as-ha-in-kubernetes-part-1/">
+    <meta property="article:published_time" content="2019-11-29T11:18:00.000Z">
+    <meta property="article:modified_time" content="2019-12-13T12:42:28.000Z">
+    <meta property="article:tag" content="Linux">
+    <meta property="article:tag" content="Howto">
+    <meta property="article:tag" content="General">
+    
+    <meta property="article:publisher" content="https://www.facebook.com/linuxcloudng">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Deploying Consul and Vault as HA in Kubernetes (Part 2)">
+    <meta name="twitter:description" content="Vault  what is vault?  Vault is an Harshicorp tool that is used for secrets management. By secrets management we mean it secures, stores, and tightly controls access to tokens, passwords, certificates, API keys, and any secrets of your choice. you can read more on  https://learn.hashicorp.com/vault  From">
+    <meta name="twitter:url" content="http://localhost:8080/deploying-consul-and-vault-as-ha-in-kubernetes-part-1/">
+    <meta name="twitter:label1" content="Written by">
+    <meta name="twitter:data1" content="John Adebayo">
+    <meta name="twitter:label2" content="Filed under">
+    <meta name="twitter:data2" content="Linux, Howto, General">
+    <meta name="twitter:site" content="@linuxcloudng">
+    
+    <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "publisher": {
+        "@type": "Organization",
+        "name": "linuxcloud.ng",
+        "logo": {
+            "@type": "ImageObject",
+            "url": "http://localhost:8080/favicon.ico",
+            "width": 48,
+            "height": 48
+        }
+    },
+    "author": {
+        "@type": "Person",
+        "name": "John Adebayo",
+        "url": "http://localhost:8080/author/adebayo/",
+        "sameAs": []
+    },
+    "headline": "Deploying Consul and Vault as HA in Kubernetes (Part 2)",
+    "url": "http://localhost:8080/deploying-consul-and-vault-as-ha-in-kubernetes-part-1/",
+    "datePublished": "2019-11-29T11:18:00.000Z",
+    "dateModified": "2019-12-13T12:42:28.000Z",
+    "keywords": "Linux, Howto, General",
+    "description": "Vault\nwhat is vault?\n\nVault is an Harshicorp tool that is used for secrets management. By secrets\nmanagement we mean it secures, stores, and tightly controls access to tokens,\npasswords, certificates, API keys, and any secrets of your choice. you can read\nmore on\nhttps://learn.hashicorp.com/vault\n\nFrom the previous post in the link below,\nhttps://linuxcloud.ng/deploying-consul-and-vault-as-ha-in-kubernetes\n\nwe deployed Consul in a kubernetes cluster. in this post we will be deploying\nvault in a ",
+    "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": "http://localhost:8080/"
+    }
+}
+    </script>
+
+    <meta name="generator" content="Ghost 3.2">
+    <link rel="alternate" type="application/rss+xml" title="linuxcloud.ng" href="http://localhost:8080/rss/">
+    <!-- Fix first paragraph font size -->
+<style type="text/css">
+ .post-template .kg-card-markdown > p:first-child {font-size: 0.8em;}
+ .post-full-content pre {
+    font-size: 1.4rem;
+}
+</style>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-146783831-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-146783831-1');
+</script>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+</head>
+<body class="post-template tag-linux tag-howto tag-general">
+
+    <div class="site-wrapper">
+
+        
+
+<header class="site-header">
+    <div class="outer site-nav-main">
+    <div class="inner">
+        <nav class="site-nav">
+    <div class="site-nav-left-wrapper">
+        <div class="site-nav-left">
+                <a class="site-nav-logo" href="../">linuxcloud.ng</a>
+            <div class="site-nav-content">
+                    <ul class="nav" role="menu">
+    <li class="nav-home" role="menuitem"><a href="http://172.168.11.62/">Home</a></li>
+    <li class="nav-general" role="menuitem"><a href="http://172.168.11.62/tag/general/">General</a></li>
+    <li class="nav-linux" role="menuitem"><a href="http://172.168.11.62/tag/linux/">Linux</a></li>
+    <li class="nav-aws" role="menuitem"><a href="http://172.168.11.62/tag/aws/">AWS</a></li>
+    <li class="nav-azure" role="menuitem"><a href="http://172.168.11.62/tag/azure/">Azure</a></li>
+    <li class="nav-database" role="menuitem"><a href="http://172.168.11.62/tag/database/">Database</a></li>
+    <li class="nav-howto" role="menuitem"><a href="http://172.168.11.62/tag/howto/">Howto</a></li>
+</ul>
+
+                    <span class="nav-post-title dash">Deploying Consul and Vault as HA in Kubernetes (Part 2)</span>
+            </div>
+        </div>
+    </div>
+    <div class="site-nav-right">
+            <div class="social-links">
+                    <a class="social-link social-link-fb" href="https://www.facebook.com/linuxcloudng" title="Facebook" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M16 0c8.837 0 16 7.163 16 16s-7.163 16-16 16S0 24.837 0 16 7.163 0 16 0zm5.204 4.911h-3.546c-2.103 0-4.443.885-4.443 3.934.01 1.062 0 2.08 0 3.225h-2.433v3.872h2.509v11.147h4.61v-11.22h3.042l.275-3.81h-3.397s.007-1.695 0-2.187c0-1.205 1.253-1.136 1.329-1.136h2.054V4.911z"/></svg></a>
+                    <a class="social-link social-link-tw" href="https://twitter.com/linuxcloudng" title="Twitter" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M30.063 7.313c-.813 1.125-1.75 2.125-2.875 2.938v.75c0 1.563-.188 3.125-.688 4.625a15.088 15.088 0 0 1-2.063 4.438c-.875 1.438-2 2.688-3.25 3.813a15.015 15.015 0 0 1-4.625 2.563c-1.813.688-3.75 1-5.75 1-3.25 0-6.188-.875-8.875-2.625.438.063.875.125 1.375.125 2.688 0 5.063-.875 7.188-2.5-1.25 0-2.375-.375-3.375-1.125s-1.688-1.688-2.063-2.875c.438.063.813.125 1.125.125.5 0 1-.063 1.5-.25-1.313-.25-2.438-.938-3.313-1.938a5.673 5.673 0 0 1-1.313-3.688v-.063c.813.438 1.688.688 2.625.688a5.228 5.228 0 0 1-1.875-2c-.5-.875-.688-1.813-.688-2.75 0-1.063.25-2.063.75-2.938 1.438 1.75 3.188 3.188 5.25 4.25s4.313 1.688 6.688 1.813a5.579 5.579 0 0 1 1.5-5.438c1.125-1.125 2.5-1.688 4.125-1.688s3.063.625 4.188 1.813a11.48 11.48 0 0 0 3.688-1.375c-.438 1.375-1.313 2.438-2.563 3.188 1.125-.125 2.188-.438 3.313-.875z"/></svg>
+</a>
+            </div>
+                <a class="rss-button" href="https://feedly.com/i/subscription/feed/http://localhost:8080/rss/" title="RSS" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="6.18" cy="17.82" r="2.18"/><path d="M4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83c0-8.59-6.97-15.56-15.56-15.56zm0 5.66v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83c0-5.47-4.43-9.9-9.9-9.9z"/></svg>
+</a>
+
+    </div>
+</nav>
+    </div>
+</div></header>
+
+
+<main id="site-main" class="site-main outer">
+    <div class="inner">
+
+        <article class="post-full post tag-linux tag-howto tag-general no-image no-image">
+
+            <header class="post-full-header">
+
+                <section class="post-full-tags">
+                    <a href="../tag/linux/">Linux</a>
+                </section>
+
+                <h1 class="post-full-title">Deploying Consul and Vault as HA in Kubernetes (Part 2)</h1>
+
+
+                <div class="post-full-byline">
+
+                    <section class="post-full-byline-content">
+
+                        <ul class="author-list">
+                            <li class="author-list-item">
+
+                                <div class="author-card">
+                                    <div class="author-profile-image"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M3.513 18.998C4.749 15.504 8.082 13 12 13s7.251 2.504 8.487 5.998C18.47 21.442 15.417 23 12 23s-6.47-1.558-8.487-4.002zM12 12c2.21 0 4-2.79 4-5s-1.79-4-4-4-4 1.79-4 4 1.79 5 4 5z" fill="#FFF"/></g></svg>
+</div>
+                                    <div class="author-info">
+                                        <h2>John Adebayo</h2>
+                                        <p>Read <a href="../author/adebayo/">more posts</a> by this author.</p>
+                                    </div>
+                                </div>
+
+                                <a href="../author/adebayo/" class="author-avatar author-profile-image"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M3.513 18.998C4.749 15.504 8.082 13 12 13s7.251 2.504 8.487 5.998C18.47 21.442 15.417 23 12 23s-6.47-1.558-8.487-4.002zM12 12c2.21 0 4-2.79 4-5s-1.79-4-4-4-4 1.79-4 4 1.79 5 4 5z" fill="#FFF"/></g></svg>
+</a>
+
+                            </li>
+                        </ul>
+
+                        <section class="post-full-byline-meta">
+                            <h4 class="author-name"><a href="../author/adebayo/">John Adebayo</a></h4>
+                            <div class="byline-meta-content">
+                                <time class="byline-meta-date" datetime="2019-11-29">29 Nov 2019</time>
+                                <span class="byline-reading-time"><span class="bull">&bull;</span> 5 min read</span>
+                            </div>
+                        </section>
+
+                    </section>
+
+
+                </div>
+            </header>
+
+
+            <section class="post-full-content">
+                <div class="post-content">
+                    <!--kg-card-begin: markdown--><p><em><strong>Vault</strong></em><br>
+what is vault?</p>
+<p><em><strong>Vault</strong></em> is an Harshicorp tool that is used for secrets management. By secrets management we mean it secures, stores, and tightly controls access to tokens, passwords, certificates, API keys, and any secrets of your choice. you can read more on<br>
+<a href="https://learn.hashicorp.com/vault">https://learn.hashicorp.com/vault</a></p>
+<p>From the previous post in the link below,<br>
+<a href="https://linuxcloud.ng/deploying-consul-and-vault-as-ha-in-kubernetes">https://linuxcloud.ng/deploying-consul-and-vault-as-ha-in-kubernetes</a></p>
+<p>we deployed Consul in a kubernetes cluster. in this post we will be deploying vault in a Production environment using Consul as our backend.</p>
+<p><em><strong>Perequisites</strong></em></p>
+<ul>
+<li>Already deployed consul in the Kubernetes cluster or container engine</li>
+<li>Traefik as well for ssl termination</li>
+<li><a href="https://linuxcloud.ng/deploying-consul-and-vault-as-ha-in-kubernetes/">https://linuxcloud.ng/deploying-consul-and-vault-as-ha-in-kubernetes/</a></li>
+</ul>
+<p><em><strong>Directory Structure</strong></em></p>
+<pre><code>.
+├── ~/config
+├── kubernetes-manifest
+├── certificate-config
+│   ├── ca-config.json
+│   ├── ca-csr.json
+│   ├── consul-csr.json
+│   └── vault-csr.json
+│   └── certs
+│       ├── ca-key.pem
+│       ├── ca.csr
+│       └── ca.pem
+</code></pre>
+<p><em><strong>ldap Integration to vault</strong></em></p>
+<pre><code>url=&quot;ldaps://xxxxxxxxxxxxxxxxxx:636&quot; 
+userattr=&quot;displayName&quot; 
+userdn=&quot;OU=User,DC=linuxcloud,DC=ng&quot; 
+groupdn=&quot;OU=IT_OU,DC=linuxcloud,DC=ng&quot; 
+groupattr=&quot;member&quot; 
+binddn=&quot;CN=function-ad,OU=Project,DC=linuxcloud,DC=ng&quot; 
+bindpass='' 
+certificate=@ldap_ca_cert.pem 
+insecure_tls=false 
+starttls=true
+</code></pre>
+<p>The kubernetes manifest for Vault is shown below</p>
+<pre><code>---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-cluster-service
+  namespace: consul
+spec:
+  sessionAffinity: ClientIP
+  selector:
+    app: vault
+  ports:
+  - name: http
+    port: 8200
+    protocol: TCP
+    targetPort: 8200 
+  - name: cluster-port 
+    port: 8201
+    protocol: TCP
+    targetPort: 8201
+---  
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault
+  namespace: consul
+  labels:
+    app: vault
+data:
+  server.json: |-
+    {
+      &quot;listener&quot;: {
+        &quot;tcp&quot;:{
+          &quot;address&quot;: &quot;0.0.0.0:8200&quot;,
+          &quot;cluster_address&quot;: &quot;0.0.0.0:8201&quot;,
+          &quot;tls_disable&quot;: 1,
+          &quot;tls_cert_file&quot;: &quot;/etc/tls/vault.pem&quot;,
+          &quot;tls_key_file&quot;: &quot;/etc/tls/vault-key.pem&quot;
+        }
+      },
+      &quot;storage&quot;: {
+        &quot;consul&quot;: {
+          &quot;address&quot;: &quot;consul-cluster-service:8500&quot;,
+          &quot;advertise_address&quot;: &quot;vault-cluster-service:8200&quot;,
+          &quot;check_timeout&quot;: &quot;30s&quot;,
+          &quot;path&quot;: &quot;vault/&quot;,
+          &quot;ha_enabled&quot;: &quot;true&quot;
+        }
+      },
+      &quot;cache&quot;: {
+        &quot;use_auto_auth_token&quot;: &quot;false&quot;
+      },
+      &quot;api_addr&quot;: &quot;http://0.0.0.0:8200&quot;,
+      &quot;cluster_addr&quot;: &quot;http://0.0.0.0:8201&quot;,
+      &quot;disable_mlock&quot;: true,
+      &quot;bootstrap&quot;: true,
+      &quot;ui&quot;: true,
+      &quot;log_level&quot;: &quot;debug&quot;,
+      &quot;default_lease_ttl&quot;: &quot;168h&quot;,
+      &quot;max_lease_ttl&quot;: &quot;720h&quot;
+    }
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: vault
+  namespace: consul
+spec:
+  serviceName: vault-cluster-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vault
+    spec:
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: vault
+          command: [&quot;vault&quot;, &quot;server&quot;, &quot;-config&quot;, &quot;/vault/config/server.json&quot;]
+          securityContext:
+            capabilities:
+              add:
+                - IPC_LOCK
+          image: &quot;vault:latest&quot;
+          imagePullPolicy: IfNotPresent
+          ports:
+          - name: vault-http
+            containerPort: 8200
+          - name: cluster-port
+            containerPort: 8201
+          env:
+          - name: VAULT_ADDR 
+            value: &quot;http://127.0.0.1:8200&quot;
+          - name: VAULT_SKIP_VERIFY 
+            value: &quot;true&quot;
+          volumeMounts:
+            - name: config-vault
+              mountPath: /vault/config/server.json
+              subPath: server.json
+            - name: vault-cert
+              mountPath: /etc/tls/vault.pem
+              subPath: vault.pem
+            - name: vault-key
+              mountPath: /etc/tls/vault-key.pem
+              subPath: vault-key.pem
+            - name: consul-ca
+              mountPath: /etc/tls/ca.pem
+              subPath: ca.pem
+            - name: ldap-cert
+              mountPath: /etc/tls/LDAP-Proxy-CA.pem
+              subPath: LDAP-Proxy-CA.pem
+        - name: consul-agent 
+          image: &quot;consul:latest&quot;
+          env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: GOSSIP_ENCRYPTION_KEY
+            valueFrom:
+              secretKeyRef:
+                name: consul
+                key: gossip-encryption-key
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          args:
+            - &quot;agent&quot;
+            - &quot;-advertise=$(POD_IP)&quot;
+            - &quot;-server=false&quot;
+            - &quot;-datacenter=dc1&quot;
+            - &quot;-domain=cluster.local&quot;
+            - &quot;-disable-host-node-id&quot;
+            - &quot;-bind=0.0.0.0&quot;
+            - &quot;-client=127.0.0.1&quot;
+            - &quot;-join=consul-cluster-service&quot;
+            - &quot;-retry-join=consul-cluster-service&quot;
+            - &quot;-ui&quot;
+          volumeMounts:
+            - name: config-consul
+              mountPath: /etc/consul
+            - name: consul-cert
+              mountPath: /etc/tls/consul.pem
+              subPath: consul.pem
+            - name: consul-key
+              mountPath: /etc/tls/consul-key.pem
+              subPath: consul-key.pem
+            - name: gossip-encryption-key
+              mountPath: /etc/tls/gossip-encryption-key
+              subPath: gossip-encryption-key
+            - name: consul-ca
+              mountPath: /etc/tls/ca.pem
+              subPath: ca.pem
+      volumes:
+        - name: config-vault
+          configMap:
+            name: vault
+            items:
+              - key: server.json
+                path: server.json
+        - name: config-consul
+          configMap:
+            name: consul
+            items:
+              - key: server.json
+                path: server.json
+        - name: vault-cert
+          secret:
+            secretName: vault
+            items:
+              - key: vault.pem
+                path: vault.pem
+        - name: vault-key
+          secret:
+            secretName: vault
+            items:
+              - key: vault-key.pem
+                path: vault-key.pem
+        - name: ldap-cert 
+          secret:
+            secretName: ldap-cert
+            items:
+              - key: LDAP-Proxy-CA.pem
+                path: LDAP-Proxy-CA.pem
+        - name: consul-ca
+          secret:
+            secretName: consul-ca
+            items:
+              - key: ca.pem
+                path: ca.pem
+        - name: consul-cert
+          secret:
+            secretName: consul
+            items:
+              - key: consul.pem
+                path: consul.pem
+        - name: consul-key
+          secret:
+            secretName: consul
+            items:
+              - key: consul-key.pem
+                path: consul-key.pem
+        - name: gossip-encryption-key
+          secret:
+            secretName: consul
+            items:
+              - key: gossip-encryption-key
+                path: gossip-encryption-key
+  volumeClaimTemplates:
+  - metadata:
+      name: data 
+      namespace: consul
+    spec:
+      accessModes: [ &quot;ReadWriteOnce&quot; ]
+      storageClassName: &quot;put-custom-storage-class&quot;
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  name: vault-ingress
+  namespace: consul
+spec:
+  rules:
+  - host: vault.example.ng
+    http:
+      paths:
+      - backend:
+          serviceName: vault-cluster-service
+          servicePort: http 
+        path: /
+</code></pre>
+<p><em><strong>vault deployment</strong></em></p>
+<pre><code>cd certificate-config
+cfssl gencert -ca=certs/ca.pem -ca-key=certs/ca-key.pem -config=ca-config.json -profile=default vault-csr.json | cfssljson -bare  ~/kubernetes-manifest/vault
+2019/05/11 13:11:33 [INFO] generate received request
+2019/05/11 13:11:33 [INFO] received CSR
+2019/05/11 13:11:33 [INFO] generating key: rsa-2048
+2019/05/11 13:11:34 [INFO] encoded CSR
+2019/05/11 13:11:34 [INFO] signed certificate with serial number xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+cd ~/kubernetes-manifest
+kubectl -n consul create secret generic vault --from-file=vault.pem --from-file=vault-key.pem
+secret/vault created
+
+kubectl apply -f .
+service/vault-cluster-service created
+configmap/vault created
+statefulset.apps/vault created
+</code></pre>
+<p><em><strong>Initializing Vault</strong></em></p>
+<pre><code>kubectl -n consul exec -it &quot;vault-0&quot; /bin/sh
+Defaulting container name to vault.
+Use 'kubectl describe pod/vault-0 -n consul' to see all of the containers in this pod.
+/ # vault operator init
+Unseal Key 1: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 2: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 3: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 4: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Unseal Key 5: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Initial Root Token: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+Vault initialized with 5 key shares and a key threshold of 3. Please securely
+distribute the key shares printed above. When the Vault is re-sealed,
+restarted, or stopped, you must supply at least 3 of these keys to unseal it
+before it can start servicing requests.
+
+Vault does not store the generated master key. Without at least 3 key to
+reconstruct the master key, Vault will remain permanently sealed!
+
+It is possible to generate new unseal keys, provided you have a quorum of
+existing unseal keys shares. See &quot;vault operator rekey&quot; for more information.
+/ # vault operator unseal
+Unseal Key (will be hidden):xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Key                Value
+---                -----
+Seal Type          shamir
+Initialized        true
+Sealed             true
+Total Shares       5
+Threshold          3
+Unseal Progress    1/3
+Unseal Nonce       xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Version            1.1.2
+HA Enabled         true
+/ # vault operator unseal
+Unseal Key (will be hidden):
+Key                Value
+---                -----
+Seal Type          shamir
+Initialized        true
+Sealed             true
+Total Shares       5
+Threshold          3
+Unseal Progress    2/3
+Unseal Nonce       xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Version            1.1.2
+HA Enabled         true
+/ # vault operator unseal
+Unseal Key (will be hidden):
+Key                    Value
+---                    -----
+Seal Type              shamir
+Initialized            true
+Sealed                 false
+Total Shares           5
+Threshold              3
+Version                1.1.2
+Cluster Name           vault-cluster-xxxxxxxxxx
+Cluster ID             xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+HA Enabled             true
+HA Cluster             n/a
+HA Mode                standby
+Active Node Address    &lt;none&gt;
+
+/ # vault login s.XXXXXXXXXXXXXXXXXXXXXXXXXX
+Success! You are now authenticated. The token information displayed below
+is already stored in the token helper. You do NOT need to run &quot;vault login&quot;
+again. Future Vault requests will automatically use this token.
+
+Key                  Value
+---                  -----
+token                XXXXXXXXXXXXXXXXXXXXXXXX
+token_accessor       XXXXXXXXXXXXXXXXXXXXXXXX
+token_duration       ∞
+token_renewable      false
+token_policies       [&quot;root&quot;]
+identity_policies    []
+policies             [&quot;root&quot;]
+
+/ # vault audit list
+No audit devices are enabled.
+/ # vault audit enable file file_path=/var/log/audit.log
+Success! Enabled the file audit device at: file/
+/ # vault auth enable ldap
+Success! Enabled ldap auth method at: ldap/
+</code></pre>
+<!--kg-card-end: markdown--><!--kg-card-begin: html--><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script>
+  (adsbygoogle = window.adsbygoogle || []).push({
+    google_ad_client: "ca-pub-6562536909161389",
+    enable_page_level_ads: true
+  });
+</script><!--kg-card-end: html-->
+                </div>
+            </section>
+
+
+
+        </article>
+
+    </div>
+</main>
+
+<aside class="read-next outer">
+    <div class="inner">
+        <div class="read-next-feed">
+                <article class="read-next-card">
+                    <header class="read-next-card-header">
+                        <h3><span>More in</span> <a href="../tag/linux/">Linux</a></h3>
+                    </header>
+                    <div class="read-next-card-content">
+                        <ul>
+                            <li>
+                                <h4><a href="../encode-and-decode-base64-bash/">encode and decode base64 Bash</a></h4>
+                                <div class="read-next-card-meta">
+                                    <p><time datetime="2019-12-19">19 Dec 2019</time> –
+                                        1 min read</p>
+                                </div>
+                            </li>
+                            <li>
+                                <h4><a href="../upgrading-terraform-from-version-0-11-to-0-12-12/">Upgrading Terraform from version 0.11.x to 0.12.12 with both a local State File or Remote State</a></h4>
+                                <div class="read-next-card-meta">
+                                    <p><time datetime="2019-10-23">23 Oct 2019</time> –
+                                        2 min read</p>
+                                </div>
+                            </li>
+                            <li>
+                                <h4><a href="../deploying-consul-and-vault-as-ha-in-kubernetes/">Deploying Consul and Vault as HA in Kubernetes (Part 1)</a></h4>
+                                <div class="read-next-card-meta">
+                                    <p><time datetime="2019-10-08">8 Oct 2019</time> –
+                                        5 min read</p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <footer class="read-next-card-footer">
+                        <a href="../tag/linux/">See all 21 posts
+                            →</a>
+                    </footer>
+                </article>
+
+                <article class="post-card post tag-linux tag-howto tag-general no-image no-image">
+
+
+    <div class="post-card-content">
+
+        <a class="post-card-content-link" href="../encode-and-decode-base64-bash/">
+
+            <header class="post-card-header">
+                    <div class="post-card-primary-tag">Linux</div>
+                <h2 class="post-card-title">encode and decode base64 Bash</h2>
+            </header>
+
+            <section class="post-card-excerpt">
+                    <p>At times in bash we want to avoid leaving some values in clear text. This is probably not the most secure way but it is enough for some not so critical data.  base64 program is installed from the coreutils package. to encode and decode</p>
+            </section>
+
+        </a>
+
+        <footer class="post-card-meta">
+            <ul class="author-list">
+                <li class="author-list-item">
+            
+                    <div class="author-name-tooltip">
+                        John Adebayo
+                    </div>
+            
+                    <a href="../author/adebayo/" class="static-avatar author-profile-image"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M3.513 18.998C4.749 15.504 8.082 13 12 13s7.251 2.504 8.487 5.998C18.47 21.442 15.417 23 12 23s-6.47-1.558-8.487-4.002zM12 12c2.21 0 4-2.79 4-5s-1.79-4-4-4-4 1.79-4 4 1.79 5 4 5z" fill="#FFF"/></g></svg>
+</a>
+                </li>
+            </ul>
+            <div class="post-card-byline-content">
+                <span><a href="../author/adebayo/">John Adebayo</a></span>
+                <span class="post-card-byline-date"><time datetime="2019-12-19">19 Dec 2019</time> <span class="bull">&bull;</span> 1 min read</span>
+            </div>
+        </footer>
+
+    </div>
+
+</article>
+
+                <article class="post-card post tag-linux tag-howto tag-general no-image no-image">
+
+
+    <div class="post-card-content">
+
+        <a class="post-card-content-link" href="../upgrading-terraform-from-version-0-11-to-0-12-12/">
+
+            <header class="post-card-header">
+                    <div class="post-card-primary-tag">Linux</div>
+                <h2 class="post-card-title">Upgrading Terraform from version 0.11.x to 0.12.12 with both a local State File or Remote State</h2>
+            </header>
+
+            <section class="post-card-excerpt">
+                    <p>As at the time of this post, the latest version of Terraform is the 0.12.12. The upgrade can be easily achieved with the following steps  Download the latest release of Terraform the link https://releases.hashicorp.com/terraform/  It can be installed</p>
+            </section>
+
+        </a>
+
+        <footer class="post-card-meta">
+            <ul class="author-list">
+                <li class="author-list-item">
+            
+                    <div class="author-name-tooltip">
+                        John Adebayo
+                    </div>
+            
+                    <a href="../author/adebayo/" class="static-avatar author-profile-image"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><path d="M3.513 18.998C4.749 15.504 8.082 13 12 13s7.251 2.504 8.487 5.998C18.47 21.442 15.417 23 12 23s-6.47-1.558-8.487-4.002zM12 12c2.21 0 4-2.79 4-5s-1.79-4-4-4-4 1.79-4 4 1.79 5 4 5z" fill="#FFF"/></g></svg>
+</a>
+                </li>
+            </ul>
+            <div class="post-card-byline-content">
+                <span><a href="../author/adebayo/">John Adebayo</a></span>
+                <span class="post-card-byline-date"><time datetime="2019-10-23">23 Oct 2019</time> <span class="bull">&bull;</span> 2 min read</span>
+            </div>
+        </footer>
+
+    </div>
+
+</article>
+        </div>
+    </div>
+</aside>
+
+
+
+
+        <footer class="site-footer outer">
+            <div class="site-footer-content inner">
+                <section class="copyright"><a href="../">linuxcloud.ng</a> &copy; 2020</section>
+                <nav class="site-footer-nav">
+                    <a href="../">Latest Posts</a>
+                    <a href="https://www.facebook.com/linuxcloudng" target="_blank" rel="noopener">Facebook</a>
+                    <a href="https://twitter.com/linuxcloudng" target="_blank" rel="noopener">Twitter</a>
+                    <a href="https://ghost.org" target="_blank" rel="noopener">Ghost</a>
+                </nav>
+            </div>
+        </footer>
+
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous">
+    </script>
+    <script src="../assets/built/casper.js"></script>
+
+    <script>
+        // Parse the URL parameter
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+
+        // Give the parameter a variable name
+        var action = getParameterByName('action');
+
+        $(document).ready(function () {
+            if (action == 'subscribe') {
+                $('body').addClass("subscribe-success");
+            }
+
+            $('.subscribe-success-message .subscribe-close').click(function () {
+                $('.subscribe-success-message').addClass('close');
+            });
+
+            // Reset form on opening subscrion overlay
+            $('.subscribe-button').click(function() {
+                $('.subscribe-overlay form').removeClass();
+                $('.subscribe-email').val('');
+            });
+        });
+    </script>
+
+    <script>
+    $(document).ready(function () {
+        // FitVids - start
+        var $postContent = $(".post-full-content");
+        $postContent.fitVids();
+        // FitVids - end
+
+        // Replace nav with title on scroll - start
+        Casper.stickyNavTitle({
+            navSelector: '.site-nav-main',
+            titleSelector: '.post-full-title',
+            activeClass: 'nav-post-title-active'
+        });
+        // Replace nav with title on scroll - end
+
+        // Hover on avatar
+        var hoverTimeout;
+        $('.author-list-item').hover(function () {
+            var $this = $(this);
+
+            clearTimeout(hoverTimeout);
+
+            $('.author-card').removeClass('hovered');
+            $(this).children('.author-card').addClass('hovered');
+
+        }, function () {
+            var $this = $(this);
+
+            hoverTimeout = setTimeout(function () {
+                $this.children('.author-card').removeClass('hovered');
+            }, 800);
+        });
+    });
+</script>
+
+
+    <script id="dsq-count-scr" src="//linucloud-ng.disqus.com/count.js" async></script>
+
+#<script data-ad-client="ca-pub-6562536909161389" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+</body>
+</html>
